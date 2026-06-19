@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nem-parece-ia — tira a cara de IA do texto, sem matar a voz</title>
+<meta name="description" content="Skill do Claude que revisa textos em PT-BR com cara de IA: corta abertura vazia, abstração, contraste fabricado e cadência robótica. Revisão por camadas, com auto-auditoria final. Não é pra enganar detector — é pra escrever melhor.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="nem-parece-ia — tira a cara de IA do texto, sem matar a voz">
+<meta property="og:description" content="Skill do Claude que revisa textos em PT-BR com cara de IA: corta abertura vazia, abstração, contraste fabricado e cadência robótica. Revisão por camadas, com auto-auditoria final.">
+<meta property="og:image" content="https://raw.githubusercontent.com/1marcelserrano/nem-parece-ia/main/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="nem-parece-ia — tira a cara de IA do texto, sem matar a voz">
+<meta name="twitter:description" content="Skill do Claude que revisa textos em PT-BR com cara de IA: corta abertura vazia, abstração, contraste fabricado e cadência robótica.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/1marcelserrano/nem-parece-ia/main/assets/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Libre+Caslon+Text:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-start:#0A0A0E; --bg-end:#111114;
+    --surface:#15151A; --surface-2:#1C1C22;
+    --line:rgba(255,255,255,0.06);
+    --grid:rgba(255,255,255,0.025);
+    --headline:#F0EEE6; --ink:#E4E1D6; --ink-soft:#9A968C;
+    --accent:#B4C636; --accent-2:#6A7820;
+    --radius-sm:2px; --radius-md:4px;
+    --maxw:760px;
+    --serif:"Libre Caslon Text",Georgia,serif;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono","Space Mono",monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; color:var(--ink); font-family:var(--sans); font-weight:300;
+    font-size:17px; line-height:1.7;
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+      linear-gradient(160deg,var(--bg-start),var(--bg-end));
+    background-size:54px 54px,54px 54px,100% 100%;
+    background-attachment:fixed;
+  }
+  #progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:100;transition:width .1s linear;}
+  .wrap{display:flex;max-width:1100px;margin:0 auto;gap:40px;padding:0 24px;}
+  nav.toc{position:sticky;top:0;align-self:flex-start;height:100vh;padding:48px 0;width:230px;flex-shrink:0;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;}
+  nav.toc ol{list-style:none;margin:0;padding:0;}
+  nav.toc li{margin:0 0 14px;}
+  nav.toc a{color:var(--ink-soft);text-decoration:none;display:block;padding-left:14px;border-left:1px solid var(--line);transition:.2s;}
+  nav.toc a:hover,nav.toc a.active{color:var(--accent);border-left-color:var(--accent);}
+  main{flex:1;min-width:0;max-width:var(--maxw);padding:48px 0 120px;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;}
+  h1{font-family:'Fraunces',var(--serif);font-weight:900;font-size:clamp(46px,8.5vw,96px);line-height:.94;color:var(--headline);letter-spacing:-.025em;margin:26px 0 42px;font-variation-settings:"opsz" 144;text-wrap:balance;}
+  h1 .hl{color:var(--accent);}
+  .lead{font-size:19px;color:var(--ink);margin:0 0 14px;}
+  .hookline{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.6vw,26px);color:var(--accent);line-height:1.3;margin:0 0 26px;}
+  /* tl;dr */
+  .tldr{background:var(--surface);border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:var(--radius-md);padding:22px 26px;margin:0 0 30px;}
+  .tldr .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 13px;display:block;}
+  .tldr ul{margin:0;padding:0;list-style:none;}
+  .tldr li{position:relative;padding-left:22px;margin:0 0 9px;font-size:15.5px;color:var(--ink);line-height:1.5;}
+  .tldr li:last-child{margin-bottom:0;}
+  .tldr li::before{content:"→";position:absolute;left:0;top:0;color:var(--accent);font-family:var(--mono);}
+  .tldr strong{font-weight:600;color:var(--headline);}
+  h2{font-family:var(--sans);font-weight:300;font-size:clamp(22px,3vw,30px);color:var(--headline);letter-spacing:-.01em;margin:0;}
+  p{margin:0 0 18px;}
+  em,.serif{font-family:var(--serif);font-style:italic;color:var(--headline);}
+  strong{font-weight:600;color:var(--headline);}
+  section{margin:0 0 16px;border-top:1px solid var(--line);}
+  .sec-head{display:flex;align-items:baseline;gap:14px;cursor:pointer;padding:36px 0 6px;user-select:none;}
+  .sec-head .num{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.14em;flex-shrink:0;text-transform:uppercase;}
+  .sec-head .chev{margin-left:auto;color:var(--ink-soft);transition:transform .3s;font-family:var(--mono);font-size:14px;}
+  section.collapsed .chev{transform:rotate(-90deg);}
+  .sec-body{overflow:hidden;transition:max-height .4s ease,opacity .3s;}
+  section.collapsed .sec-body{max-height:0 !important;opacity:0;}
+  .label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:22px 0 6px;}
+  /* data viz */
+  .figure{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:28px 30px;margin:26px 0;}
+  .figure .cap{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 22px;}
+  .chart{display:flex;gap:40px;align-items:flex-end;height:200px;margin:50px 0 0;}
+  .chart .col{position:relative;flex:1;height:0;align-self:flex-end;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:var(--radius-sm) var(--radius-sm) 0 0;transition:height 1.1s cubic-bezier(.2,.7,.2,1);}
+  .chart .val{position:absolute;top:-42px;left:0;right:0;text-align:center;font-family:var(--sans);font-weight:600;font-size:30px;color:var(--headline);}
+  .legend{display:flex;gap:40px;margin:14px 0 0;}
+  .legend span{flex:1;text-align:center;font-size:13px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.03em;line-height:1.35;}
+  .figure .note{font-size:13px;color:var(--ink-soft);margin:24px 0 0;}
+  /* stat strip */
+  .statrow{display:flex;gap:26px;margin:30px 0 0;border-top:1px solid var(--line);padding-top:24px;}
+  .statrow .stat{flex:1;text-align:center;}
+  .statrow .stat .val{font-family:var(--sans);font-weight:600;font-size:30px;color:var(--headline);display:block;line-height:1;}
+  .statrow .stat .l{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-soft);text-transform:uppercase;margin-top:9px;display:block;line-height:1.4;}
+  /* stages */
+  .stages{display:grid;gap:13px;margin:26px 0;}
+  .stagecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:20px 22px;display:flex;gap:18px;align-items:flex-start;transition:.2s;}
+  .stagecard:hover{border-color:var(--accent);}
+  .stagecard .sn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent);flex-shrink:0;padding-top:2px;width:28px;}
+  .stagecard .st{color:var(--headline);font-weight:500;font-size:16px;margin:0 0 5px;}
+  .stagecard .sd{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.55;}
+  /* roster (camadas) */
+  .roster{display:grid;gap:13px;margin:22px 0 0;}
+  .rcard{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-md);padding:18px 20px;display:flex;gap:18px;align-items:flex-start;transition:.2s;}
+  .rcard:hover{border-color:var(--accent);}
+  .rcard .rn{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--accent);flex-shrink:0;padding-top:3px;width:96px;text-transform:uppercase;}
+  .rcard .rt{color:var(--headline);font-weight:500;font-size:15.5px;margin:0 0 4px;}
+  .rcard .rd{font-size:14px;color:var(--ink-soft);margin:0;line-height:1.55;}
+  /* domain chips + collision */
+  .seals{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px;}
+  .seal{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 13px;transition:.2s;}
+  .seal:hover{border-color:var(--accent);color:var(--accent);}
+  .collide{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin:26px 0;font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;}
+  .collide .dom{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 15px;color:var(--ink);}
+  .collide .op{color:var(--accent);font-size:17px;}
+  .angle{background:var(--surface);border-left:2px solid var(--accent);border-radius:var(--radius-md);padding:24px 28px;margin:24px 0 0;}
+  .angle .q{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--headline);line-height:1.35;margin:0 0 10px;}
+  .angle .src{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:0;}
+  /* closing + cta */
+  .closing{background:var(--surface);border-left:2px solid var(--accent);border-radius:var(--radius-md);padding:26px 30px;margin:30px 0 0;}
+  .closing .big{font-family:var(--serif);font-style:italic;font-size:23px;color:var(--headline);line-height:1.35;margin:0 0 14px;}
+  .cta-row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:26px;}
+  .dlbtn{display:inline-block;background:var(--accent);color:#0A0B0F;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:14px 24px;border-radius:var(--radius-sm);text-decoration:none;font-weight:600;transition:.2s;}
+  .dlbtn:hover{background:#c7d94a;}
+  .cta-sec{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);text-decoration:none;transition:.2s;border-bottom:1px solid var(--line);padding-bottom:3px;}
+  .cta-sec:hover{color:var(--accent);border-color:var(--accent);}
+  /* footer */
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:30px 0;display:flex;align-items:center;gap:13px;}
+  .mono-mark{height:32px;width:auto;color:var(--accent);flex-shrink:0;display:block;}
+  .sig{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);}
+  .social{display:flex;gap:14px;align-items:center;margin-top:24px;}
+  .social a{color:var(--ink-soft);transition:.2s;display:inline-flex;}
+  .social a:hover{color:var(--accent);}
+  .social button.share{background:none;border:0;padding:0;margin:0;cursor:pointer;color:var(--ink-soft);transition:.2s;display:inline-flex;font:inherit;line-height:0;}
+  .social button.share:hover{color:var(--accent);}
+  .share-toast{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);opacity:0;transition:opacity .3s;align-self:center;pointer-events:none;}
+  .share-toast.show{opacity:1;}
+  @media(max-width:880px){
+    nav.toc{display:none;}
+    .wrap{padding:0 18px;}
+    body{font-size:16px;}
+    .chart{gap:26px;}
+    .statrow{flex-wrap:wrap;gap:20px;}
+    .statrow .stat{flex:1 1 38%;}
+    .rcard{flex-direction:column;gap:6px;}
+    .rcard .rn{width:auto;}
+    br.brk{display:none;}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none !important;}}
+  @media print{
+    body{background:#fff;color:#111;}
+    nav.toc,#progress{display:none;}
+    section.collapsed .sec-body{max-height:none !important;opacity:1 !important;}
+    .figure,.seal,.closing,.stagecard,.angle{border-color:#ccc;background:#fff;}
+    h1,h2,strong,em{color:#111;}
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <ol>
+      <li><a href="#abre">Abertura</a></li>
+      <li><a href="#c1">Camada 1 · O problema</a></li>
+      <li><a href="#c2">Camada 2 · O mecanismo</a></li>
+      <li><a href="#c3">Camada 3 · O fluxo</a></li>
+      <li><a href="#c4">Camada 4 · Antes e depois</a></li>
+      <li><a href="#fim">Pra fechar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <p class="kicker">nem-parece-ia · revisão editorial PT-BR</p>
+    <h1 id="abre">Nem parece <span class="hl">IA</span>.</h1>
+    <p class="hookline">Texto certo, mas sem vida.<br class="brk"> Claro, mas genérico. A skill nomeia o que denuncia — e corrige.</p>
+    <div class="tldr">
+      <span class="lbl">TL;DR</span>
+      <ul>
+        <li><strong>O problema:</strong> rascunho de IA acerta a gramática e erra a voz — abertura vazia, abstração sem prova, contraste fabricado, cadência de metrônomo.</li>
+        <li><strong>O mecanismo:</strong> revisão em camadas — frases, estruturas, ritmo, registro — fechada por uma auto-auditoria que relê e caça o tell que sobrou.</li>
+        <li><strong>A prova:</strong> reescreve com agente, ação e consequência no lugar do floreio, e calibra o corte por canal — sem esterilizar a voz.</li>
+      </ul>
+    </div>
+    <p class="lead">Não é pra enganar detector nem simular imperfeição. É pra melhorar texto ruim em português do Brasil: mais direto, mais específico, com quem faz e o que acontece no lugar de abstração.</p>
+
+    <section id="c1">
+      <div class="sec-head"><span class="num">Camada 1 · O problema</span><h2></h2><span class="chev">▾</span></div>
+      <div class="sec-body"><div style="padding-bottom:10px">
+        <h2 style="margin:0 0 18px">Certo, mas sem alma</h2>
+        <p>Um texto de IA chega correto. A gramática fecha, os parágrafos têm tamanho parecido, tudo soa profissional. E mesmo assim você desconfia antes de saber por quê.</p>
+        <p>Os tells são previsíveis. Abertura que anuncia em vez de entrar no assunto. Sujeito abstrato fazendo ação humana — "o mercado exige", "a tecnologia transforma". Contraste fabricado, "não é sobre X, é sobre Y". Tríade automática. Cópula inflada, "serve como" onde cabia "é". Gerúndio decorativo colado no fim pra simular análise.</p>
+        <p class="label">Por que trocar palavra não resolve</p>
+        <p>Trocar termo por sinônimo mantém a estrutura robótica por baixo. O cheiro continua. Por isso a revisão é por camadas — da frase à arquitetura do parágrafo, cada uma com um critério próprio.</p>
+      </div></div>
+    </section>
+
+    <section id="c2">
+      <div class="sec-head"><span class="num">Camada 2 · O mecanismo</span><h2></h2><span class="chev">▾</span></div>
+      <div class="sec-body"><div style="padding-bottom:10px">
+        <h2 style="margin:0 0 18px">As camadas que ela revisa</h2>
+        <p>A skill não aplica regra cega. Primeiro identifica o registro — post, e-mail, institucional, técnico, acadêmico, comercial. Depois desce pelas camadas, ajustando a agressividade do corte ao canal.</p>
+        <p>O que ela procura em cada uma:</p>
+
+        <div class="figure">
+          <p class="cap">as cinco camadas da revisão</p>
+          <div class="roster">
+            <div class="rcard"><span class="rn">Frases</span><div><p class="rt">Muleta na superfície</p><p class="rd">Abertura vazia, conector morto, intensificador que infla ("muito", "realmente"), jargão. "É importante destacar que" vira o começo direto.</p></div></div>
+            <div class="rcard"><span class="rn">Estruturas</span><div><p class="rt">O esqueleto artificial</p><p class="rd">Contraste fabricado, falsa agência, passiva evasiva, cópula inflada. "O mercado exige" vira "clientes B2B recusam contrato sem SLA".</p></div></div>
+            <div class="rcard"><span class="rn">Ritmo</span><div><p class="rt">A cadência de metrônomo</p><p class="rd">Tríade previsível, punchline automática, frases todas do mesmo tamanho. "Clareza. Consistência. Presença." vira relação causal.</p></div></div>
+            <div class="rcard"><span class="rn">Registro</span><div><p class="rt">O ajuste por canal</p><p class="rd">Calibra o corte ao gênero. E-mail mantém cortesia; documentação mantém a passiva útil; acadêmico mantém cautela. Não esteriliza.</p></div></div>
+            <div class="rcard"><span class="rn">Exemplos</span><div><p class="rt">Antes e depois</p><p class="rd">Modelos de reescrita guiam a edição, em vez de aplicar regra cega. Mostram o corte com a intenção preservada.</p></div></div>
+          </div>
+          <p class="note">Cortar o que anuncia, infla ou teatraliza. Preservar o que informa, situa, prova ou move o texto.</p>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="c3">
+      <div class="sec-head"><span class="num">Camada 3 · Como funciona</span><h2></h2><span class="chev">▾</span></div>
+      <div class="sec-body"><div style="padding-bottom:10px">
+        <h2 style="margin:0 0 18px">O fluxo, em cinco passos</h2>
+        <p>Da leitura à entrega, a revisão segue uma ordem fixa. O último passo é o que separa a skill de um "deixa mais natural" genérico.</p>
+        <div class="stages">
+          <div class="stagecard"><span class="sn">01</span><div><p class="st">Identificar o registro</p><p class="sd">Antes de editar, classifica o gênero: social, ensaio, e-mail, institucional, técnico, acadêmico, comercial ou criativo. O registro define o que pode cair e o que tem que ficar.</p></div></div>
+          <div class="stagecard"><span class="sn">02</span><div><p class="st">Detectar as muletas</p><p class="sd">Varre frases, aberturas, conectores, intensificadores, jargão e metacomentário. Marca os tells de PT-BR camada por camada.</p></div></div>
+          <div class="stagecard"><span class="sn">03</span><div><p class="st">Diagnosticar a estrutura</p><p class="sd">Procura contraste fabricado, falsa agência, passiva evasiva, cópula inflada, gerúndio de falsa profundidade, pergunta performática e punchline automática.</p></div></div>
+          <div class="stagecard"><span class="sn">04</span><div><p class="st">Reescrever com agente, ação e objeto</p><p class="sd">Nomeia quem faz, o que faz, por que importa e qual consequência aparece. Regula o ritmo: alterna frase curta, média e longa, sem tríade previsível.</p></div></div>
+          <div class="stagecard"><span class="sn">05</span><div><p class="st">Auto-auditoria final</p><p class="sd">Relê a versão revisada e pergunta: o que ainda denuncia origem artificial aqui? Lista os tells restantes em uma linha e corrige antes de entregar.</p></div></div>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="c4">
+      <div class="sec-head"><span class="num">Camada 4 · Um exemplo</span><h2></h2><span class="chev">▾</span></div>
+      <div class="sec-body"><div style="padding-bottom:10px">
+        <h2 style="margin:0 0 18px">Uma abertura institucional</h2>
+        <p><em>"No cenário atual, é fundamental destacar que a inovação tem desempenhado um papel cada vez mais relevante. Não se trata apenas de tecnologia, mas de pessoas. Nossa solução serve como um catalisador, impulsionando resultados e refletindo nosso compromisso com a excelência."</em></p>
+        <p class="label">O que a skill marca</p>
+        <div class="seals">
+          <span class="seal"><b>Abertura vazia</b> &nbsp;"no cenário atual", "é fundamental destacar que"</span>
+          <span class="seal"><b>Falsa agência</b> &nbsp;"a inovação tem desempenhado um papel"</span>
+          <span class="seal"><b>Contraste fabricado</b> &nbsp;"não se trata apenas de X, mas de Y"</span>
+          <span class="seal"><b>Cópula inflada</b> &nbsp;"serve como um catalisador"</span>
+          <span class="seal"><b>Gerúndio decorativo</b> &nbsp;"impulsionando", "refletindo"</span>
+          <span class="seal"><b>Abstração sem prova</b> &nbsp;"compromisso com a excelência"</span>
+        </div>
+        <div class="angle">
+          <p class="q">"Reduzimos a implantação de seis semanas<br class="brk"> para nove dias."</p>
+          <p class="src">A reescrita troca floreio por fato: agente nomeado, número concreto, consequência verificável. Mesma intenção, sem cara de IA — e sem ficar seca, porque o registro institucional ainda cabe.</p>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="fim">
+      <div class="sec-head"><span class="num">Pra fechar</span><h2></h2><span class="chev">▾</span></div>
+      <div class="sec-body"><div style="padding-bottom:10px">
+        <div class="closing">
+          <p class="big">O alvo não é enganar detector.<br class="brk"> É escrever melhor.</p>
+          <p style="margin:0">A skill corta o que anuncia, infla ou teatraliza, e preserva o que informa, situa, prova ou move o texto. Calibra por canal, não esteriliza. Uma skill do Claude, um arquivo markdown. Sem servidor, sem dependência.</p>
+        </div>
+        <div class="cta-row">
+          <a class="dlbtn" href="https://github.com/1marcelserrano/nem-parece-ia" target="_blank" rel="noopener">Ver no GitHub →</a>
+          <a class="cta-sec" href="https://fronteirista.substack.com" target="_blank" rel="noopener">Fronteirista · newsletter</a>
+        </div>
+        <p class="serif" style="margin-top:26px">Marcel</p>
+      </div></div>
+    </section>
+
+    <div class="social">
+      <a href="https://www.instagram.com/mscreative.systems" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://www.linkedin.com/in/marcelserrano/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.2 8h4.6v13H.2V8zm7.4 0h4.4v1.8h.06c.6-1.1 2.06-2.26 4.24-2.26 4.54 0 5.38 2.86 5.38 6.58V21h-4.6v-5.9c0-1.4-.02-3.2-1.96-3.2-1.96 0-2.26 1.52-2.26 3.1V21H7.6V8z"/></svg></a>
+      <a href="https://fronteirista.substack.com" target="_blank" rel="noopener" aria-label="Substack"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <button type="button" class="share" aria-label="Compartilhar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+      <span class="share-toast" aria-live="polite">link copiado</span>
+    </div>
+    <footer><svg class="mono-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 67.19667 51.75458" role="img" aria-label="Monograma MSCREATIVE.SYSTEMS"><path fill="currentColor" d="M8.15479,17.66986c-.10727,4.76875.03115,9.5285.41527,14.27922.25365,3.1651,1.03955,6.29608,1.74645,9.47888C12.17932,49.84272-.28837,51.03399.0051,42.2846c.35921-10.7694,2.02753-21.07894,5.00492-30.92856.43105-1.41773,1.65413-3.47677,3.2464-2.21435.53746.42306.92911.9969,1.17496,1.72154l5.78538,16.91602c.23584.68769.41046.67353.52387-.04254,1.02383-6.35386,2.74577-12.56867,5.16579-18.64433,2.42341-6.08573,7.57839-4.14271,9.40284.91599,2.77922,7.71993,3.71882,15.26481,4.54493,24.0988.01976.18583.11541.20673.28695.06271,5.16382-4.20649,10.48613-8.20113,15.96693-11.98388.2477-.17071.22158-.25977-.07835-.26709-3.61598-.09368-7.23981-.18066-10.87148-.26095-7.39821-.16475-4.36055-6.1619-1.09576-9.14847,3.1263-2.86316,6.25148-5.72857,9.37556-8.59623,1.40786-1.29146,2.61261-3.41267,5.0914-3.82386,5.89972-.9766,7.89921,6.29685,3.23346,9.68677-3.83797,2.79228-7.80539,5.39743-11.90226,7.81541-.15464.09367-.14189.15021.03827.16962,3.88277.43335,7.73249.3423,11.54916-.27318,2.22015-.35804,3.71273-2.03541,5.76647-2.29809,3.64903-.46082,6.04224,3.15361,4.51287,6.37544-.40245.85424-1.13742,1.76487-2.20492,2.73191-9.11467,8.26941-20.20634,14.6041-28.33323,22.56665-1.08504,1.06379-2.30373,3.42673-3.57933,4.09058-4.6234,2.39615-8.52986-.9142-8.76183-5.62878-.18359-3.7576-1.48526-26.94142-1.86815-26.88513-.09989.01549-.20829.14727-.27434.33352-1.46726,4.3048-2.51335,8.71175-3.13827,13.2209-.12499.90632-.43616,1.72773-.9335,2.46426-1.56103,2.29841-3.54903-.8048-4.06681-2.08179-2.07112-5.11908-3.79413-9.98508-5.16903-14.59797-.02544-.08589-.07445-.14821-.12558-.15976l-.05874-.0085c-.02576-.00602-.05156.01476-.05761.04636-.00077.00405-.00119.00814-.00126.01226l-.00003-.00003Z"/></svg><span class="sig">MSCREATIVE.SYSTEMS&trade;</span></footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var prog=document.getElementById('progress');
+  function onScroll(){var h=document.documentElement.scrollHeight-window.innerHeight;prog.style.width=(h>0?(window.scrollY/h*100):0)+'%';}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  document.querySelectorAll('.sec-head').forEach(function(h){
+    var body=h.nextElementSibling;
+    body.style.maxHeight=body.scrollHeight+'px';
+    h.addEventListener('click',function(){
+      var sec=h.parentElement;sec.classList.toggle('collapsed');
+      if(!sec.classList.contains('collapsed')){body.style.maxHeight=body.scrollHeight+'px';}
+    });
+  });
+  function recalc(){document.querySelectorAll('section:not(.collapsed) .sec-body').forEach(function(b){b.style.maxHeight=b.scrollHeight+'px';});}
+  window.addEventListener('resize',recalc);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(recalc);}
+  window.addEventListener('load',recalc);
+
+  var links=document.querySelectorAll('nav.toc a');
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  var spy=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.remove('active');});var id=e.target.id;if(map[id])map[id].classList.add('active');}});
+  },{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('main section,#abre').forEach(function(s){if(s.id)spy.observe(s);});
+
+  var anim=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      var el=e.target,type=el.getAttribute('data-anim');
+      if(type==='bars'){
+        el.querySelectorAll('.col').forEach(function(c){c.style.height=c.getAttribute('data-h')+'%';});
+        el.querySelectorAll('.val').forEach(function(v){
+          var target=+v.getAttribute('data-count'),
+              suf=v.getAttribute('data-suffix')||'',
+              pre=v.getAttribute('data-prefix')||'',t0=null;
+          function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/1100,1);v.textContent=pre+Math.round(p*target).toLocaleString('pt-BR')+suf;if(p<1)requestAnimationFrame(step);}
+          requestAnimationFrame(step);
+        });
+      } else {el.classList.add('in');}
+      anim.unobserve(el);
+    });
+  },{threshold:.3});
+  document.querySelectorAll('[data-anim]').forEach(function(el){anim.observe(el);});
+
+  var shareBtn=document.querySelector('.social button.share');
+  if(shareBtn){
+    var toast=document.querySelector('.share-toast');
+    function showToast(){if(toast){toast.classList.add('show');setTimeout(function(){toast.classList.remove('show');},1800);}}
+    function legacyCopy(){try{var ta=document.createElement('textarea');ta.value=location.href;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast();}catch(e){}}
+    shareBtn.addEventListener('click',function(){
+      var data={title:document.title,text:'nem-parece-ia — tira a cara de IA do texto, sem matar a voz',url:location.href};
+      if(navigator.share){navigator.share(data).catch(function(){});return;}
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(location.href).then(showToast).catch(legacyCopy);
+      }else{legacyCopy();}
+    });
+  }
+})();
+</script>
+</body>
+</html>
