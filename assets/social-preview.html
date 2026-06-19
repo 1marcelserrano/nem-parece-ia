@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- Social preview 1280×640 — instância do gabarito DS V3.0 (CLAUDE_OUTPUTS/card-gabarito).
      Render: Chrome headless, --window-size=1280,640 --force-device-scale-factor=2 → 2560×1280.
-     Preset: nem-parece-ia · motivo cleanup (rascunho riscado → linha limpa) · variante open. -->
+     Preset: nem-parece-ia · motivo robot-disguise (robô de óculos e bigode) · variante open.
+     Headline em UMA única linha: "Nem parece IA." (IA maiúscula, lima). -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -32,11 +33,11 @@
     justify-content:space-between;z-index:2}
   .kicker{font-size:18px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--mono)}
   .mid{display:flex;align-items:center;justify-content:space-between;gap:40px;flex:1;margin:22px 0}
-  .copy{max-width:58%}
+  .copy{max-width:72%}
   .headline{font-family:'Fraunces',serif;font-weight:600;font-variation-settings:'opsz' 36,'wght' 600;
-    line-height:.82;letter-spacing:-.01em;font-size:120px}
-  .headline .l1{display:block;color:var(--cream)}
-  .headline .l2{display:block;color:var(--accent);font-style:normal;font-weight:600}
+    line-height:1;letter-spacing:-.01em;font-size:96px;white-space:nowrap}
+  .headline .l1{color:var(--cream)}
+  .headline .l2{color:var(--accent);font-style:normal;font-weight:600}
   .tagline{margin-top:34px;font-size:26px;line-height:1.4;color:var(--mono);max-width:30ch}
   .motif{flex:0 0 auto;width:300px;height:300px;display:flex;align-items:center;justify-content:center}
   .motif svg{width:100%;height:100%}
@@ -54,20 +55,23 @@
       <div class="kicker">MSCREATIVE.SYSTEMS™ — A CLAUDE SKILL</div>
       <div class="mid">
         <div class="copy">
-          <div class="headline">
-            <span class="l1">Nem parece</span>
-            <span class="l2">IA.</span>
-          </div>
+          <div class="headline"><span class="l1">Nem parece </span><span class="l2">IA.</span></div>
           <div class="tagline">Tira a cara de IA do texto.<br>Sem matar a voz.</div>
         </div>
         <div class="motif">
           <svg viewBox="0 0 300 300">
-            <line class="gy" x1="58" y1="74" x2="242" y2="74"/>
-            <line class="gy" x1="58" y1="106" x2="206" y2="106"/>
-            <line class="gy" x1="58" y1="138" x2="242" y2="138"/>
-            <line class="gy" x1="58" y1="170" x2="190" y2="170"/>
-            <line class="ln" x1="46" y1="192" x2="254" y2="52"/>
-            <line class="ln" x1="58" y1="226" x2="242" y2="226"/>
+            <line class="gy" x1="150" y1="64" x2="150" y2="44"/>
+            <circle class="acf" cx="150" cy="39" r="8"/>
+            <rect class="gy" x="74" y="64" width="152" height="150" rx="28"/>
+            <line class="gy" x1="74" y1="128" x2="58" y2="128"/>
+            <line class="gy" x1="226" y1="128" x2="242" y2="128"/>
+            <circle class="ln" cx="115" cy="126" r="27"/>
+            <circle class="ln" cx="185" cy="126" r="27"/>
+            <line class="ln" x1="142" y1="126" x2="158" y2="126"/>
+            <circle class="acf" cx="115" cy="126" r="8"/>
+            <circle class="acf" cx="185" cy="126" r="8"/>
+            <path class="gy" d="M150 150 q-8 16 0 20 q8 -4 0 -20"/>
+            <path class="ln" d="M112 188 C133 173,145 181,150 188 C155 181,167 173,188 188" stroke-width="9"/>
           </svg>
         </div>
       </div>
